@@ -73,9 +73,6 @@ jspm_packages/
 # DynamoDB Local files
 .dynamodb/
 
-# Temporary uploads
-uploads/
-!uploads/.gitkeep
 
 # IDE
 .vscode/

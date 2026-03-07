@@ -1,6 +1,6 @@
 const Post = require('../models/Post');
 const Category = require('../models/Category');
-const Comment = require('../models/comment');
+const Comment = require('../models/Comment');
 const { ErrorResponse } = require('../middleware/errorHandler');
 const { clerkClient } = require('@clerk/clerk-sdk-node');
 const mongoose = require('mongoose');
