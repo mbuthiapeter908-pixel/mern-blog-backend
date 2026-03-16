@@ -28,27 +28,46 @@ const limiter = rateLimit({
   message: 'Too many requests from this IP, please try again later.'
 });
 
-// Middleware
-app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } })); // Security headers
-app.use(compression()); // Compress responses
-app.use(morgan('dev')); // Logging
-app.use(express.json({ limit: '10mb' })); // Parse JSON bodies
-app.use(express.urlencoded({ extended: true, limit: '10mb' })); // Parse URL-encoded bodies
-app.use('/uploads', express.static(path.join(__dirname, 'uploads'))); // Serve static files
-
 // CORS configuration
 const corsOptions = {
-  origin: process.env.CLIENT_URL || 'http://localhost:5173',
+  origin: function (origin, callback) {
+    const allowedOrigins = [
+      'http://localhost:5173',
+      'http://localhost:3000',
+      process.env.CLIENT_URL,
+    ].filter(Boolean);
+
+    // Allow requests with no origin (mobile apps, curl, Postman etc)
+    if (!origin) {
+      return callback(null, true);
+    }
+
+    // Allow any Vercel preview/production URL for this project
+    if (
+      allowedOrigins.includes(origin) ||
+      origin.endsWith('.vercel.app')
+    ) {
+      return callback(null, true);
+    }
+
+    console.log('❌ CORS blocked origin:', origin);
+    callback(new Error('Not allowed by CORS'));
+  },
   credentials: true,
   optionsSuccessStatus: 200,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 };
 
+// Middleware — order matters
 app.use(cors(corsOptions));
-
-// Handle preflight requests
-//app.options('*', cors(corsOptions));
+//app.options('*', cors(corsOptions)); // Handle preflight requests
+app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
+app.use(compression());
+app.use(morgan('dev'));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Apply rate limiting to API routes
 app.use('/api/', limiter);
@@ -78,7 +97,7 @@ app.get('/api/auth/test', requireAuth, (req, res) => {
   });
 });
 
-// 404 handler for undefined routes - FIXED VERSION
+// 404 handler for undefined routes
 app.use((req, res, next) => {
   res.status(404).json({
     success: false,
@@ -86,18 +105,17 @@ app.use((req, res, next) => {
   });
 });
 
-// Error handling middleware (should be last)
+// Error handling middleware (must be last)
 app.use(errorHandler);
 
 // MongoDB connection
 const connectDB = async () => {
   try {
     await mongoose.connect(process.env.MONGODB_URI);
-    console.log(' MongoDB is connected successfully');
-    
-    // Log available collections
+    console.log('✅ MongoDB connected successfully');
+
     const collections = await mongoose.connection.db.listCollections().toArray();
-    console.log(' Available collections:', collections.map(c => c.name));
+    console.log('📊 Available collections:', collections.map(c => c.name));
   } catch (error) {
     console.error('❌ MongoDB connection error:', error);
     process.exit(1);
