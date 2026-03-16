@@ -53,7 +53,7 @@ const corsOptions = {
     console.log('❌ CORS blocked origin:', origin);
     callback(new Error('Not allowed by CORS'));
   },
-  credentials: false,
+  //credentials: false,
   optionsSuccessStatus: 200,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
